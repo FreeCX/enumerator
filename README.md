@@ -13,9 +13,8 @@ $ cargo run
 >> print x
 68.5
 >> y <- (x - 0.5) / 10
->> print x y
-68.5
-6.8
+>> print x + y
+75.3
 >> exit
 ```
 
