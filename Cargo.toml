@@ -1,0 +1,4 @@
+[package]
+name = "enumerator"
+version = "0.1.0"
+authors = ["Alexey Golubev <dr.freecx@gmail.com>"]
