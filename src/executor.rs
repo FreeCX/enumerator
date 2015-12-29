@@ -5,7 +5,8 @@ use std::collections::HashMap;
 fn get_priority(operator: &str) -> Option<i8> {
     match operator {
         "(" => Some(-1),
-        "*" | "/" => Some(1),
+        "^" => Some(0),
+        "*" | "/" | "%" => Some(1),
         "+" | "-" => Some(2),
         _ => None,
     }
@@ -44,48 +45,61 @@ fn can_pop(op1: &Token, stack: &Vec<Token>) -> bool {
 fn in2rpn(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> Vec<Token> {
     let mut result: Vec<Token> = Vec::new();
     let mut funcs: Vec<Token> = Vec::new();
-    // skip variable name and operator
-    for item in tokens.iter().skip(2) {
-        // push numeric value to result vector
-        if item.id == TokenType::IsNumeric {
-            result.push(item.clone());
-        } else if item.id == TokenType::IsVariable {
+    let mut token_counter = 0;
+    for item in tokens {
+        token_counter += 1;
+        match item.id {
+            // push numeric value to result vector
+            TokenType::IsNumeric => {
+                result.push(item.clone());
+            }
             // get value from hashmap and push to result
-            let token = match variables.get(&item.param) {
-                Some(value) => format!("{}", value.clone()),
-                None => {
-                    println!("> error: can't found {} variable!", item.param);
-                    break;
+            TokenType::IsVariable => {
+                if token_counter == 1 {
+                    continue;
                 }
-            };
-            result.push(Token::new(token.clone(), TokenType::IsNumeric));
-        } else {
-            if item.param == ")" {
-                // push all acumulated functions in brackets
-                while funcs.len() > 0 && funcs.last().unwrap().param != "(" {
-                    let function = match funcs.pop() {
-                        Some(value) => value,
-                        None => {
-                            println!("> error: function stack is empty");
-                            break;
-                        }
-                    };
-                    result.push(function);
+                let token = match variables.get(&item.param) {
+                    Some(value) => format!("{}", value.clone()),
+                    None => {
+                        println!("> error: can't found {} variable!", item.param);
+                        break;
+                    }
+                };
+                result.push(Token::new(token.clone(), TokenType::IsNumeric));
+            }
+            TokenType::IsFunction => {
+                continue;
+            }
+            TokenType::IsOperation => {
+                if item.param == ")" {
+                    // push all acumulated functions in brackets
+                    while funcs.len() > 0 && funcs.last().unwrap().param != "(" {
+                        let function = match funcs.pop() {
+                            Some(value) => value,
+                            None => {
+                                println!("> error: function stack is empty");
+                                break;
+                            }
+                        };
+                        result.push(function);
+                    }
+                    funcs.pop();
+                } else if item.param == "<-" {
+                    continue;
+                } else {
+                    // push other functions
+                    while can_pop(item, &funcs) {
+                        let function = match funcs.pop() {
+                            Some(value) => value,
+                            None => {
+                                println!("> error: function stack is empty");
+                                break;
+                            }
+                        };
+                        result.push(function);
+                    }
+                    funcs.push(item.clone());
                 }
-                funcs.pop();
-            } else {
-                // push other functions
-                while can_pop(item, &funcs) {
-                    let function = match funcs.pop() {
-                        Some(value) => value,
-                        None => {
-                            println!("> error: function stack is empty");
-                            break;
-                        }
-                    };
-                    result.push(function);
-                }
-                funcs.push(item.clone());
             }
         }
     }
@@ -123,6 +137,8 @@ fn rpn2value(line: &Vec<Token>) -> f32 {
                 "-" => b - a,
                 "*" => b * a,
                 "/" => b / a,
+                "%" => b % a,
+                "^" => b.powf(a),
                 _ => continue,
             };
             stack.push(result);
@@ -155,13 +171,40 @@ pub fn execute(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> boo
     if first.id == TokenType::IsFunction {
         match first.param.as_ref() {
             "print" => {
-                // iterate by all tokens (except first)
+                let mut calculate_it = false;
                 for item in tokens.iter().skip(1) {
-                    match variables.get(&item.param) {
-                        Some(var) => println!("{} ", var),
-                        None => {
-                            println!("> error: variable '{}' is not defined!", item.param);
-                            continue;
+                    if item.id == TokenType::IsOperation {
+                        calculate_it = true;
+                        break;
+                    }
+                }
+                if calculate_it {
+                    // convert infix to reverse polish
+                    let rpn_statement = in2rpn(variables, tokens);
+                    // calucate reverse polish
+                    let value = rpn2value(&rpn_statement);
+                    println!("{} ", value);
+                } else {
+                    // iterate by all tokens (except first)
+                    for item in tokens.iter().skip(1) {
+                        match item.id {
+                            // find variable in hashmap and print
+                            TokenType::IsVariable => {
+                                match variables.get(&item.param) {
+                                    Some(var) => println!("{} ", var),
+                                    None => {
+                                        println!("> error: variable '{}' is not defined!",
+                                                 item.param);
+                                        continue;
+                                    }
+                                }
+                            }
+                            // print numeric value
+                            TokenType::IsNumeric => println!("{}", item.param),
+                            // say no way!
+                            TokenType::IsFunction | TokenType::IsOperation => {
+                                println!("type '{}' : {:?}", item.param, item.id)
+                            }
                         }
                     }
                 }
