@@ -1,13 +1,16 @@
 use tokenizer::{Token, TokenType};
 use std::collections::HashMap;
 
+// type alias for stack
+pub type Numeric = f64;
+
 // get operation priority
 fn get_priority(operator: &str) -> Option<i8> {
     match operator {
-        "(" => Some(-1),
-        "^" => Some(0),
-        "*" | "/" | "%" => Some(1),
-        "+" | "-" => Some(2),
+        "(" => Some(0),
+        "^" => Some(1),
+        "*" | "/" | "%" => Some(2),
+        "+" | "-" => Some(3),
         _ => None,
     }
 }
@@ -42,7 +45,7 @@ fn can_pop(op1: &Token, stack: &Vec<Token>) -> bool {
 }
 
 // convert infix notation to reverse polish
-fn in2rpn(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> Vec<Token> {
+fn in2rpn(variables: &mut HashMap<String, Numeric>, tokens: &Vec<Token>) -> Vec<Token> {
     let mut result: Vec<Token> = Vec::new();
     let mut funcs: Vec<Token> = Vec::new();
     let mut token_counter = 0;
@@ -84,7 +87,7 @@ fn in2rpn(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> Vec<Toke
                         result.push(function);
                     }
                     funcs.pop();
-                } else if item.param == "<-" {
+                } else if item.param == "=" {
                     continue;
                 } else {
                     // push other functions
@@ -111,8 +114,8 @@ fn in2rpn(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> Vec<Toke
 }
 
 // reverse polish notation to value
-fn rpn2value(line: &Vec<Token>) -> f32 {
-    let mut stack: Vec<f32> = Vec::new();
+fn rpn2value(line: &Vec<Token>) -> Numeric {
+    let mut stack: Vec<Numeric> = Vec::new();
     for token in line {
         if token.id == TokenType::IsOperation {
             // get first operand
@@ -132,7 +135,7 @@ fn rpn2value(line: &Vec<Token>) -> f32 {
                 }
             };
             // calculate statement
-            let result: f32 = match token.param.as_ref() {
+            let result: Numeric = match token.param.as_ref() {
                 "+" => b + a,
                 "-" => b - a,
                 "*" => b * a,
@@ -158,7 +161,7 @@ fn rpn2value(line: &Vec<Token>) -> f32 {
 }
 
 // check tokens type and calculate it
-pub fn execute(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> bool {
+pub fn execute(variables: &mut HashMap<String, Numeric>, tokens: &Vec<Token>) -> bool {
     // get first token
     let first = tokens.get(0).unwrap();
     // get second token
@@ -209,6 +212,9 @@ pub fn execute(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> boo
                     }
                 }
             }
+            "stack" => {
+                println!("> variables stack: {:?}", variables);
+            }
             "exit" => return true,
             _ => println!("> error: function '{}' not defined", first.param),
         }
@@ -223,7 +229,7 @@ pub fn execute(variables: &mut HashMap<String, f32>, tokens: &Vec<Token>) -> boo
         // if second token is operation -- caclucate statement
         if operator.id == TokenType::IsOperation {
             match operator.param.as_ref() {
-                "<-" => {
+                "=" => {
                     // convert infix to reverse polish
                     let rpn_statement = in2rpn(variables, tokens);
                     // calucate reverse polish
