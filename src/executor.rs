@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub type Numeric = f64;
 
 // get operation priority
-fn get_priority(operator: &str) -> Option<i8> {
+fn get_priority(operator: &str) -> Option<u8> {
     match operator {
         "(" => Some(0),
         "^" => Some(1),
@@ -41,7 +41,7 @@ fn can_pop(op1: &Token, stack: &Vec<Token>) -> bool {
             return false;
         }
     };
-    p1 >= 0 && p2 >= 0 && p1 >= p2
+    p1 > 0 && p2 > 0 && p1 >= p2
 }
 
 // convert infix notation to reverse polish
