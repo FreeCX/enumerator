@@ -216,18 +216,23 @@ pub fn execute(variables: &mut HashMap<String, Numeric>, tokens: &Vec<Token>) ->
             }
             "read" => {
                 let mut buffer = String::new();
-                io::stdin().read_line(&mut buffer)
-                    .ok()
-                    .expect( "[error] Can't read line from stdin!" );
-                let value: Numeric = match buffer.trim().parse() {
-                    Ok(value) => value,
-                    Err(why) => {
-                        println!("> error: {}", why);
-                        return false;
-                    }
-                };
                 for variable in tokens.iter().skip(1) {
+                    print!("{} = ", variable.param);
+                    io::stdout().flush()
+                        .ok()
+                        .expect( "[error] Can't flush to stdout!" );
+                    io::stdin().read_line(&mut buffer)
+                        .ok()
+                        .expect( "[error] Can't read line from stdin!" );
+                    let value: Numeric = match buffer.trim().parse() {
+                        Ok(value) => value,
+                        Err(why) => {
+                            println!("> error: {}", why);
+                            return false;
+                        }
+                    };
                     variables.insert(variable.param.clone(), value);
+                    buffer.clear();
                 }
             }
             "stack" => {
