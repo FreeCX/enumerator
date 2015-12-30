@@ -58,7 +58,7 @@ impl SpecTypes for char {
 
 fn identify(item: &str) -> TokenType {
     // available functions
-    let funcs: HashSet<&'static str> = seq!["print", "exit"];
+    let funcs: HashSet<&'static str> = seq!["print", "stack", "exit"];
     // get first character from string
     let chr = item.chars().nth(0).unwrap();
     // check character type
