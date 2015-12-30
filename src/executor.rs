@@ -1,5 +1,7 @@
 use tokenizer::{Token, TokenType};
 use std::collections::HashMap;
+use std::io::prelude::*;
+use std::io;
 
 // type alias for stack
 pub type Numeric = f64;
@@ -210,6 +212,22 @@ pub fn execute(variables: &mut HashMap<String, Numeric>, tokens: &Vec<Token>) ->
                             }
                         }
                     }
+                }
+            }
+            "read" => {
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)
+                    .ok()
+                    .expect( "[error] Can't read line from stdin!" );
+                let value: Numeric = match buffer.trim().parse() {
+                    Ok(value) => value,
+                    Err(why) => {
+                        println!("> error: {}", why);
+                        return false;
+                    }
+                };
+                for variable in tokens.iter().skip(1) {
+                    variables.insert(variable.param.clone(), value);
                 }
             }
             "stack" => {
