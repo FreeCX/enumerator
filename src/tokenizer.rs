@@ -29,9 +29,9 @@ macro_rules! seq {
 }
 
 impl Token {
-    pub fn new(buffer: String, id: TokenType) -> Token {
+    pub fn new<I>(buffer: I, id: TokenType) -> Token where I: Into<String> {
         Token {
-            param: buffer,
+            param: buffer.into(),
             id: id,
         }
     }
@@ -89,7 +89,7 @@ pub fn tokenize<'a>(buffer: &'a str) -> Vec<Token> {
             if curr_pos - last_pos > 0 && last_type != CharTypes::IsSpace {
                 let tmp = strcpy(buffer, last_pos, curr_pos);
                 let token_type = identify(tmp);
-                stack.push(Token::new(tmp.to_owned(), token_type));
+                stack.push(Token::new(tmp, token_type));
             }
             last_pos = curr_pos;
             last_type = curr_type;
@@ -100,7 +100,7 @@ pub fn tokenize<'a>(buffer: &'a str) -> Vec<Token> {
     if last_type != CharTypes::IsSpace {
         let tmp = strcpy(buffer, last_pos, curr_pos);
         let token_type = identify(tmp);
-        stack.push(Token::new(tmp.to_owned(), token_type));
+        stack.push(Token::new(tmp, token_type));
     }
     stack
 }
